@@ -28,7 +28,8 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         course TEXT NOT NULL,
-        deadline TEXT NOT NULL
+        deadline TEXT NOT NULL,
+        filePath TEXT
       )
     ''');
 
@@ -43,6 +44,15 @@ class DatabaseHelper {
         semester TEXT NOT NULL,
         isMakeup INTEGER NOT NULL,
         isCancelled INTEGER NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE materials (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        course TEXT NOT NULL,
+        filePath TEXT NOT NULL
       )
     ''');
 
@@ -187,4 +197,26 @@ class DatabaseHelper {
     final db = await instance.database;
     return await db.delete('tasks', where: 'id = ?', whereArgs: [id]);
   }
+
+  // --- OPERATIONS FOR MATERIALS ---
+
+  Future<int> insertMaterial(String title, String course, String filePath) async {
+    final db = await instance.database;
+    return await db.insert('materials', {
+      'title': title,
+      'course': course,
+      'filePath': filePath,
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getAllMaterials() async {
+    final db = await instance.database;
+    return await db.query('materials', orderBy: 'id DESC');
+  }
+
+  Future<int> deleteMaterial(int id) async {
+    final db = await instance.database;
+    return await db.delete('materials', where: 'id = ?', whereArgs: [id]);
+  }
+
 }
