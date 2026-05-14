@@ -1,3 +1,4 @@
+import 'dart:io'; // <--- TAMBAHIN INI BUAT CEK PLATFORM
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -33,6 +34,22 @@ class _ElokPortalScreenState extends State<ElokPortalScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (Platform.isLinux || Platform.isWindows) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text("Portal eLOK"),
+          backgroundColor: const Color(0xFF4A00E0),
+          foregroundColor: Colors.white,
+        ),
+        body: const Center(
+          child: Text(
+            "WebView eLOK nggak disupport di Linux/Windows.\nHarus di-run di Emulator Android atau HP asli ya!",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16),
+          ),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text("Portal eLOK UGM"),
