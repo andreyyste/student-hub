@@ -72,10 +72,11 @@ class _AddEditScheduleScreenState extends State<AddEditScheduleScreen> {
     );
     if (pickedTime != null) {
       setState(() {
-        if (isStart)
+        if (isStart) {
           _startTime = pickedTime;
-        else
+        } else {
           _endTime = pickedTime;
+        }
       });
     }
   }
@@ -125,7 +126,7 @@ class _AddEditScheduleScreenState extends State<AddEditScheduleScreen> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _selectedSemester,
+                    initialValue: _selectedSemester,
                     decoration: const InputDecoration(labelText: "Semester"),
                     items: _semesters
                         .map(
@@ -140,7 +141,7 @@ class _AddEditScheduleScreenState extends State<AddEditScheduleScreen> {
                 const SizedBox(width: 15),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _selectedDay,
+                    initialValue: _selectedDay,
                     decoration: const InputDecoration(labelText: "Hari"),
                     items: _days
                         .map(
@@ -197,7 +198,7 @@ class _AddEditScheduleScreenState extends State<AddEditScheduleScreen> {
               value: _isMakeup,
               onChanged: (val) => setState(() => _isMakeup = val),
               contentPadding: EdgeInsets.zero,
-              activeColor: Colors.orange,
+              activeThumbColor: Colors.orange,
             ),
 
             if (isEditing)
@@ -212,7 +213,7 @@ class _AddEditScheduleScreenState extends State<AddEditScheduleScreen> {
                 value: _isCancelled,
                 onChanged: (val) => setState(() => _isCancelled = val),
                 contentPadding: EdgeInsets.zero,
-                activeColor: Colors.redAccent,
+                activeThumbColor: Colors.redAccent,
               ),
 
             const SizedBox(height: 40),
