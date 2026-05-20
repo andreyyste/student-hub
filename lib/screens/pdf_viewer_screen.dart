@@ -4,7 +4,7 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import '../database_helper.dart'; 
-import '../models/student_task.dart'; // Wajib di-import biar StudentTask jalan
+import '../models/student_task.dart';
 
 class PdfViewerScreen extends StatefulWidget {
   final String? pdfUrl;
@@ -30,6 +30,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   final TextEditingController _courseController = TextEditingController();
   String _selectedCategory = 'Slide'; 
   final List<String> _categories = ['Slide', 'Catatan', 'Latihan', 'Lainnya'];
+  
+  // Variabel buat nampung deadline
+  DateTime? _selectedDeadline; 
 
   Future<void> _downloadAndSavePdf(String type) async {
     if (widget.pdfUrl == null || widget.cookie == null) return;
@@ -40,7 +43,6 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
 
     try {
       final dir = await getApplicationDocumentsDirectory();
-      // Bikin nama file dari inputan user biar rapi, buang spasi
       String cleanTitle = _titleController.text.replaceAll(' ', '_');
       String fileName = "${cleanTitle}_${DateTime.now().millisecondsSinceEpoch}.pdf";
       String savePath = "${dir.path}/$fileName";
@@ -53,26 +55,23 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
       );
 
       if (type == 'tugas') {
-        // Bikin deadline default (H+7) kalau di-download dari eLOK
-        DateTime defaultDeadline = DateTime.now().add(const Duration(days: 7));
-        
+        // Sekarang pake deadline dari yang lu pilih di form
         final newTask = StudentTask(
           title: _titleController.text,
           course: _courseController.text,
-          deadline: defaultDeadline,
-          filePath: savePath, // Path PDF yang baru di-download diselipin di sini
+          deadline: _selectedDeadline!, 
+          filePath: savePath, 
         );
         
         await DatabaseHelper.instance.insertTask(newTask);
         
         if (mounted) {
            ScaffoldMessenger.of(context).showSnackBar(
-             const SnackBar(content: Text("Tugas disimpan! Deadline diset H+7 (Bisa diedit nanti).")),
+             const SnackBar(content: Text("Tugas beserta PDF berhasil disimpan!")),
            );
         }
 
       } else if (type == 'materi') {
-        // Masukin ke SQLite Material dengan Kategori
         await DatabaseHelper.instance.insertMaterial(
           _titleController.text, 
           _courseController.text, 
@@ -82,7 +81,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Materi berhasil disimpan!")),
+            const SnackBar(content: Text("Materi offline berhasil disimpan!")),
           );
         }
       }
@@ -102,71 +101,124 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
     }
   }
 
-  // --- POPUP FORM SEBELUM DOWNLOAD ---
+  // --- POPUP FORM SEBELUM DOWNLOAD (UDAH DI-FIX) ---
   void _showDownloadDialog(String type) {
-    // Clear form tiap kali popup dibuka
     _titleController.clear();
     _courseController.clear();
+    _selectedDeadline = null; // Reset tiap kali buka popup
 
     showDialog(
       context: context,
-      barrierDismissible: false, // User gabisa nutup modal sembarangan 
-      builder: (context) => AlertDialog(
-        title: Text("Simpan sebagai $type"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _titleController,
-                decoration: InputDecoration(
-                  labelText: type == 'tugas' ? "Judul Tugas" : "Judul Materi",
-                ),
+      barrierDismissible: false, 
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) {
+          return AlertDialog(
+            title: Text("Simpan sebagai $type"),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: _titleController,
+                    decoration: InputDecoration(
+                      labelText: type == 'tugas' ? "Judul Tugas" : "Judul Materi",
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _courseController,
+                    decoration: const InputDecoration(labelText: "Nama Mata Kuliah"),
+                  ),
+                  const SizedBox(height: 10),
+                  
+                  // Kalau Tugas, munculin pemilih Deadline
+                  if (type == 'tugas')
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        _selectedDeadline == null
+                            ? "Pilih Deadline"
+                            : "${_selectedDeadline!.day}/${_selectedDeadline!.month}/${_selectedDeadline!.year} ${_selectedDeadline!.hour}:${_selectedDeadline!.minute.toString().padLeft(2, '0')}",
+                      ),
+                      trailing: const Icon(Icons.calendar_month, color: Color(0xFF4A00E0)),
+                      onTap: () async {
+                        final DateTime? pickedDate = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime(2030),
+                        );
+                        if (pickedDate != null) {
+                          final TimeOfDay? pickedTime = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.now(),
+                          );
+                          if (pickedTime != null) {
+                            // Pake setStateDialog biar kalender di popupnya ke-update
+                            setStateDialog(() {
+                              _selectedDeadline = DateTime(
+                                pickedDate.year,
+                                pickedDate.month,
+                                pickedDate.day,
+                                pickedTime.hour,
+                                pickedTime.minute,
+                              );
+                            });
+                          }
+                        }
+                      },
+                    ),
+
+                  // Kalau Materi, munculin Dropdown Kategori
+                  if (type == 'materi')
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: "Kategori"),
+                      value: _selectedCategory,
+                      items: _categories.map((String category) {
+                        return DropdownMenuItem<String>(
+                          value: category,
+                          child: Text(category),
+                        );
+                      }).toList(),
+                      onChanged: (newValue) {
+                        if (newValue != null) {
+                          setStateDialog(() {
+                            _selectedCategory = newValue;
+                          });
+                        }
+                      },
+                    ),
+                ],
               ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _courseController,
-                decoration: const InputDecoration(labelText: "Nama Mata Kuliah"),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Batal'),
               ),
-              const SizedBox(height: 10),
-              
-              // Dropdown Kategori cuma muncul kalau simpan sebagai Materi
-              if (type == 'materi')
-                DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(labelText: "Kategori"),
-                  value: _selectedCategory,
-                  items: _categories.map((String category) {
-                    return DropdownMenuItem<String>(
-                      value: category,
-                      child: Text(category),
-                    );
-                  }).toList(),
-                  onChanged: (newValue) {
-                    if (newValue != null) {
-                      setState(() {
-                        _selectedCategory = newValue;
-                      });
+              ElevatedButton(
+                onPressed: () {
+                  if (_titleController.text.isNotEmpty && _courseController.text.isNotEmpty) {
+                    // Validasi khusus tugas: gaboleh kosong deadline-nya
+                    if (type == 'tugas' && _selectedDeadline == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Pilih deadline-nya dulu bro!')),
+                      );
+                      return;
                     }
-                  },
-                ),
+                    Navigator.pop(context); 
+                    _downloadAndSavePdf(type); 
+                  } else {
+                     ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Isi judul sama matkulnya dulu!')),
+                      );
+                  }
+                },
+                child: const Text('Download & Simpan'),
+              ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (_titleController.text.isNotEmpty && _courseController.text.isNotEmpty) {
-                Navigator.pop(context); // Tutup dialog
-                _downloadAndSavePdf(type); // Gas download
-              }
-            },
-            child: const Text('Download'),
-          ),
-        ],
+          );
+        }
       ),
     );
   }
@@ -183,7 +235,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
               title: const Text('Simpan sebagai Tugas'),
               onTap: () {
                 Navigator.pop(context);
-                _showDownloadDialog('tugas'); // Panggil Dialog Form
+                _showDownloadDialog('tugas'); 
               },
             ),
             ListTile(
@@ -191,7 +243,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
               title: const Text('Simpan sebagai Materi'),
               onTap: () {
                 Navigator.pop(context);
-                _showDownloadDialog('materi'); // Panggil Dialog Form
+                _showDownloadDialog('materi'); 
               },
             ),
           ],
