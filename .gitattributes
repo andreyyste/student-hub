@@ -1,11 +1,17 @@
-# Mengabaikan folder auto-generated Flutter dari statistik bahasa GitHub
-android/* linguist-vendored
-ios/* linguist-vendored
-linux/* linguist-vendored
-macos/* linguist-vendored
-windows/* linguist-vendored
-web/* linguist-vendored
-build/* linguist-vendored
+# Mengabaikan folder bawaan secara menyeluruh (recursive)
+android/** linguist-vendored
+ios/** linguist-vendored
+linux/** linguist-vendored
+macos/** linguist-vendored
+windows/** linguist-vendored
+web/** linguist-vendored
+build/** linguist-vendored
 
-# (Opsional) Memaksa file Dart untuk selalu dideteksi
+# Tembak mati ekstensi web bawaan biar nggak dihitung
+*.html linguist-detectable=false
+*.js linguist-detectable=false
+*.css linguist-detectable=false
+*.json linguist-detectable=false
+
+# Paksa deteksi Dart
 *.dart linguist-detectable=true
