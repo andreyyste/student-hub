@@ -3,26 +3,35 @@ import 'package:path/path.dart';
 import 'models/student_task.dart';
 import 'models/class_schedule.dart';
 
+/// Kelas helper untuk mengelola koneksi dan operasi database SQLite 
+/// menggunakan pola arsitektur Singleton agar hanya ada satu instance database yang berjalan.
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
 
+  // Konstruktor privat untuk Singleton
   DatabaseHelper._init();
 
+  /// Mendapatkan instance database aktif. 
+  /// Jika belum ada, fungsi ini akan menginisialisasi database terlebih dahulu.
   Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await _initDB('student_tasks.db');
     return _database!;
   }
 
+  /// Menentukan path atau lokasi penyimpanan file database di dalam sistem perangkat.
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    // Kalau lu mau nambah tabel/kolom lagi besok-besok, version-nya dinaikin
+    // Tingkatkan nilai 'version' jika terdapat perubahan skema database 
+    // (misalnya penambahan tabel atau kolom baru) di masa mendatang.
     return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
+  /// Mengeksekusi perintah SQL untuk membuat tabel-tabel 
+  /// saat database pertama kali diinisialisasi.
   Future _createDB(Database db, int version) async {
     await db.execute('''
       CREATE TABLE tasks (
@@ -58,6 +67,7 @@ class DatabaseHelper {
       )
     ''');
 
+    // Data awal (seeder) untuk jadwal kuliah reguler
     final defaultSchedules = [
       {
         "course": "Probabilitas & Variabel Acak",
@@ -141,34 +151,42 @@ class DatabaseHelper {
       },
     ];
 
+    // Memasukkan data jadwal awal ke dalam tabel 'schedules'
     for (var schedule in defaultSchedules) {
       await db.insert('schedules', schedule);
     }
   }
 
-  // --- OPERATIONS FOR SCHEDULES ---
+  // ==========================================
+  // OPERASI CRUD UNTUK JADWAL KELAS (SCHEDULES)
+  // ==========================================
+  
+  /// Mengambil daftar jadwal kelas berdasarkan semester tertentu.
   Future<List<ClassSchedule>> getSchedulesBySemester(String semester) async {
     final db = await instance.database;
     final result = await db.query(
       'schedules',
       where: 'semester = ?',
       whereArgs: [semester],
-      orderBy: 'startTime ASC',
+      orderBy: 'startTime ASC', // Diurutkan berdasarkan waktu mulai tercepat
     );
     return result.map((json) => ClassSchedule.fromMap(json)).toList();
   }
 
+  /// Menambahkan jadwal kelas baru ke dalam database.
   Future<int> insertSchedule(ClassSchedule schedule) async {
     final db = await instance.database;
     return await db.insert('schedules', schedule.toMap());
   }
 
+  /// Mengambil seluruh data jadwal kelas yang tersimpan.
   Future<List<ClassSchedule>> getAllSchedules() async {
     final db = await instance.database;
     final result = await db.query('schedules', orderBy: 'startTime ASC');
     return result.map((json) => ClassSchedule.fromMap(json)).toList();
   }
 
+  /// Memperbarui data jadwal kelas yang sudah ada berdasarkan ID.
   Future<int> updateSchedule(ClassSchedule schedule) async {
     final db = await instance.database;
     return await db.update(
@@ -179,29 +197,40 @@ class DatabaseHelper {
     );
   }
 
+  /// Menghapus jadwal kelas dari database berdasarkan ID.
   Future<int> deleteSchedule(int id) async {
     final db = await instance.database;
     return await db.delete('schedules', where: 'id = ?', whereArgs: [id]);
   }
 
-  // --- OPERATIONS FOR TASKS ---
+  // ==========================================
+  // OPERASI CRUD UNTUK TUGAS MAHASISWA (TASKS)
+  // ==========================================
+  
+  /// Menambahkan tugas baru ke dalam database.
   Future<int> insertTask(StudentTask task) async {
     final db = await instance.database;
     return await db.insert('tasks', task.toMap());
   }
 
+  /// Mengambil seluruh tugas, diurutkan berdasarkan tenggat waktu terdekat.
   Future<List<StudentTask>> getAllTasks() async {
     final db = await instance.database;
     final result = await db.query('tasks', orderBy: 'deadline ASC');
     return result.map((json) => StudentTask.fromMap(json)).toList();
   }
 
+  /// Menghapus tugas dari database berdasarkan ID.
   Future<int> deleteTask(int id) async {
     final db = await instance.database;
     return await db.delete('tasks', where: 'id = ?', whereArgs: [id]);
   }
 
-  // --- OPERATIONS FOR MATERIALS ---
+  // ==========================================
+  // OPERASI CRUD UNTUK MATERI KULIAH (MATERIALS)
+  // ==========================================
+  
+  /// Menambahkan rujukan atau file materi perkuliahan baru.
   Future<int> insertMaterial(String title, String course, String category, String filePath) async {
     final db = await instance.database;
     return await db.insert('materials', {
@@ -212,11 +241,13 @@ class DatabaseHelper {
     });
   }
 
+  /// Mengambil seluruh data materi, diurutkan dari yang terbaru (ID tertinggi).
   Future<List<Map<String, dynamic>>> getAllMaterials() async {
     final db = await instance.database;
     return await db.query('materials', orderBy: 'id DESC');
   }
 
+  /// Menghapus data materi dari database berdasarkan ID.
   Future<int> deleteMaterial(int id) async {
     final db = await instance.database;
     return await db.delete('materials', where: 'id = ?', whereArgs: [id]);
