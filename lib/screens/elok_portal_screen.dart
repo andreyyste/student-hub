@@ -39,7 +39,8 @@ class _ElokPortalScreenState extends State<ElokPortalScreen> {
     final controller = _webViewController;
     if (controller == null) return;
     final canGoBack = await controller.canGoBack();
-    if (!mounted || canGoBack == _canGoBack) return;
+    if (!mounted) return;
+    if (canGoBack == _canGoBack) return;
     setState(() {
       _canGoBack = canGoBack;
     });
@@ -47,7 +48,7 @@ class _ElokPortalScreenState extends State<ElokPortalScreen> {
 
   Future<void> _handleBackPressed() async {
     final controller = _webViewController;
-    if (controller != null && await controller.canGoBack()) {
+    if (controller != null && _canGoBack) {
       await controller.goBack();
       await _updateCanGoBack();
       return;
