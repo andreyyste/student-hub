@@ -14,6 +14,7 @@ class ElokPortalScreen extends StatefulWidget {
 class _ElokPortalScreenState extends State<ElokPortalScreen> {
   double _progress = 0;
   InAppWebViewController? _webViewController;
+  bool _canGoBack = false;
 
   // Mendefinisikan daftar 'whitelist' domain yang aman dan berizin untuk diakses di dalam WebView
   final List<String> _allowedDomains = [
@@ -31,6 +32,28 @@ class _ElokPortalScreenState extends State<ElokPortalScreen> {
     return _allowedDomains.any(
       (domain) => uri.host == domain || uri.host.endsWith('.$domain'),
     );
+  }
+
+  Future<void> _updateCanGoBack() async {
+    final controller = _webViewController;
+    if (controller == null) return;
+    final canGoBack = await controller.canGoBack();
+    if (!mounted || canGoBack == _canGoBack) return;
+    setState(() {
+      _canGoBack = canGoBack;
+    });
+  }
+
+  Future<void> _handleBackPressed() async {
+    final controller = _webViewController;
+    if (controller != null && await controller.canGoBack()) {
+      await controller.goBack();
+      await _updateCanGoBack();
+      return;
+    }
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -54,6 +77,11 @@ class _ElokPortalScreenState extends State<ElokPortalScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Portal eLOK UGM"),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Kembali',
+          onPressed: _handleBackPressed,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -93,6 +121,13 @@ class _ElokPortalScreenState extends State<ElokPortalScreen> {
             ),
             onWebViewCreated: (controller) {
               _webViewController = controller;
+              _updateCanGoBack();
+            },
+            onLoadStop: (controller, url) {
+              _updateCanGoBack();
+            },
+            onUpdateVisitedHistory: (controller, url, androidIsReload) {
+              _updateCanGoBack();
             },
 
             shouldOverrideUrlLoading: (controller, navigationAction) async {
