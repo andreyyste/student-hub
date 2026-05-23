@@ -139,30 +139,21 @@ class _ViewMaterialsScreenState extends State<ViewMaterialsScreen> {
                   itemCount: materials.length,
                   itemBuilder: (context, index) {
                     final material = materials[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      child: ListTile(
-                        leading: const Icon(Icons.description, color: Color(0xFF4A00E0)),
-                        title: Text(material['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text("${material['course']} • ${material['category']}"),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.grey),
-                          onPressed: () async {
-                            // Mengeksekusi delegasi penghapusan file baik dari tabel SQL maupun fisik memori lokal
-                            File(material['filePath']).deleteSync(); 
-                            await DatabaseHelper.instance.deleteMaterial(material['id']);
-                            _refreshMaterials();
-                          },
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => PdfViewerScreen(localPath: material['filePath']),
-                            ),
-                          );
-                        },
-                      ),
+                    return MaterialCard(
+                      material: material,
+                      onDelete: () async {
+                        File(material['filePath']).deleteSync(); 
+                        await DatabaseHelper.instance.deleteMaterial(material['id']);
+                        _refreshMaterials();
+                      },
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PdfViewerScreen(localPath: material['filePath']),
+                          ),
+                        );
+                      },
                     );
                   },
                 );
