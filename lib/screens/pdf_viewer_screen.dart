@@ -60,9 +60,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
 
       if (type == 'tugas') {
         final newTask = StudentTask(
-          title: _titleController.text,
-          course: _courseController.text,
-          deadline: _selectedDeadline!, 
+          title: title,
+          course: course,
+          deadline: deadline!, 
           filePath: savePath, 
         );
         
@@ -76,9 +76,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
 
       } else if (type == 'materi') {
         await DatabaseHelper.instance.insertMaterial(
-          _titleController.text, 
-          _courseController.text, 
-          _selectedCategory, 
+          title, 
+          course, 
+          category, 
           savePath
         );
         
