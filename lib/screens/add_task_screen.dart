@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import '../models/student_task.dart';
 import '../database_helper.dart';
 
@@ -13,7 +14,11 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   final _titleController = TextEditingController();
   final _courseController = TextEditingController();
   DateTime? _selectedDeadline;
+  
+  // Variabel untuk menyimpan jalur (path) file PDF secara lokal
+  String? _selectedFilePath; 
 
+  /// Membuka dialog kalender dan waktu untuk memilih batas waktu tugas (deadline).
   Future<void> _pickDeadline() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -37,6 +42,20 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
           );
         });
       }
+    }
+  }
+
+  /// Membuka sistem pengelola file perangkat untuk mengunggah dokumen berekstensi PDF.
+  Future<void> _pickPdf() async {
+    FilePickerResult? result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedFilePath = result.files.single.path;
+      });
     }
   }
 
@@ -71,18 +90,38 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
+            const SizedBox(height: 15),
+            
+            // Tombol untuk menginisiasi pemilihan file PDF lampiran tugas
+            OutlinedButton.icon(
+              onPressed: _pickPdf,
+              icon: const Icon(Icons.attach_file),
+              label: Text(
+                _selectedFilePath == null 
+                  ? "Tambahkan PDF (Opsional)" 
+                  // Mengekstrak dan menampilkan nama file dari jalur (path) keseluruhan
+                  : _selectedFilePath!.split('/').last, 
+                overflow: TextOverflow.ellipsis,
+              ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                alignment: Alignment.centerLeft,
+              ),
+            ),
             const Spacer(),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
               ),
               onPressed: () async {
+                // Memastikan judul dan batas waktu telah terisi sebelum menyimpan ke database
                 if (_titleController.text.isNotEmpty &&
                     _selectedDeadline != null) {
                   final newTask = StudentTask(
                     title: _titleController.text,
                     course: _courseController.text,
                     deadline: _selectedDeadline!,
+                    filePath: _selectedFilePath, // Menyertakan path file lokal ke dalam objek model
                   );
                   await DatabaseHelper.instance.insertTask(newTask);
 

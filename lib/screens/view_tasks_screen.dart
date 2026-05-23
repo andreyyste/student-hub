@@ -64,7 +64,8 @@ class _ViewTasksScreenState extends State<ViewTasksScreen> {
                         onPressed: () async {
                           if (task.id != null) {
                             await DatabaseHelper.instance.deleteTask(task.id!);
-                            _refreshTasks(); // Refresh list setelah dihapus
+                            // Memuat ulang daftar visual komponen tugas (FutureBuilder) pasca konfirmasi operasi penghapusan basis data
+                            _refreshTasks(); 
                           }
                         },
                       ),
