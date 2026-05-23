@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/class_schedule.dart';
-import '../database_helper.dart';
+import '../services/database_helper.dart';
 
 class AddEditScheduleScreen extends StatefulWidget {
   final ClassSchedule? schedule;
