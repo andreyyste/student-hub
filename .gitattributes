@@ -7,7 +7,6 @@ windows/** linguist-vendored
 web/** linguist-vendored
 build/** linguist-vendored
 
-# Tembak mati ekstensi web bawaan biar nggak dihitung
 *.html linguist-detectable=false
 *.js linguist-detectable=false
 *.css linguist-detectable=false
