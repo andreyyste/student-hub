@@ -5,10 +5,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'screens/dashboard_screen.dart';
 
 Future<void> main() async { 
-  // Memastikan binding Flutter telah diinisialisasi sebelum menjalankan fungsi asinkron.
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Memuat konfigurasi variabel lingkungan dari file .env.
   await dotenv.load(fileName: ".env");
 
   // Inisialisasi SQLite FFI secara spesifik untuk lingkungan desktop (Windows/Linux).
