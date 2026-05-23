@@ -205,10 +205,10 @@ class _ElokPortalScreenState extends State<ElokPortalScreen> {
             },
 
             // Tangkapan eksekusi dan penanganan galat (error handling) bilamana terjadi masalah pemuatan
-            onLoadError: (controller, url, code, message) {
+            onReceivedError: (controller, request, error) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Error loading page: $message'),
+                  content: Text('Error loading page: ${error.description}'),
                   backgroundColor: Colors.red,
                 ),
               );
