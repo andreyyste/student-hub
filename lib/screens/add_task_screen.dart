@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/student_task.dart';
-import '../database_helper.dart';
+import '../services/database_helper.dart';
 
 class AddTaskScreen extends StatefulWidget {
   const AddTaskScreen({super.key});
@@ -125,7 +125,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                   );
                   await DatabaseHelper.instance.insertTask(newTask);
 
-                  Navigator.pop(context);
+                  if (mounted) Navigator.pop(context);
                 }
               },
               child: const Text("Simpan Database"),
