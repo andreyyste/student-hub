@@ -49,10 +49,16 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
         widget.pdfUrl!,
         savePath,
         options: Options(headers: {'Cookie': widget.cookie}),
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            setState(() {
+              _downloadProgress = received / total;
+            });
+          }
+        },
       );
 
       if (type == 'tugas') {
-        // Mewariskan detail entitas 'tugas' ke database dengan lampiran berkas lokal dan tenggat waktu
         final newTask = StudentTask(
           title: _titleController.text,
           course: _courseController.text,
