@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart' as fp;
+import 'package:path_provider/path_provider.dart';
 import '../database_helper.dart';
 import 'pdf_viewer_screen.dart';
 
@@ -26,6 +29,95 @@ class _ViewMaterialsScreenState extends State<ViewMaterialsScreen> {
     });
   }
 
+  /// Mengeksekusi modul pengelola file sistem (File Picker) untuk memilih dokumen dari luar lingkup aplikasi.
+  Future<void> _addMaterialFromDevice() async {
+    // Menggunakan alias (namespace) 'fp.' agar tidak memunculkan konflik kelas dengan elemen antarmuka Flutter
+    fp.FilePickerResult? result = await fp.FilePicker.pickFiles(
+      type: fp.FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+
+    if (result != null && result.files.single.path != null) {
+      File originalFile = File(result.files.single.path!);
+      String fileName = result.files.single.name;
+      
+      // Membuka jendela dialog interaktif untuk mendefinisikan label (judul dan matkul) dokumen
+      _showMaterialDetailsDialog(originalFile, fileName);
+    }
+  }
+
+  /// Menampilkan dialog popup formulir kelengkapan keterangan dari dokumen materi yang baru diunggah.
+  void _showMaterialDetailsDialog(File originalFile, String fileName) {
+    final titleController = TextEditingController(text: fileName.replaceAll('.pdf', ''));
+    final courseController = TextEditingController();
+    String dialogCategory = 'Slide'; 
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text("Detail Materi Baru"),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: "Judul Materi"),
+                    ),
+                    TextField(
+                      controller: courseController,
+                      decoration: const InputDecoration(labelText: "Mata Kuliah"),
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: dialogCategory,
+                      items: ['Slide', 'Catatan', 'Latihan', 'Lainnya']
+                          .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                          .toList(),
+                      onChanged: (val) => setDialogState(() => dialogCategory = val!),
+                      decoration: const InputDecoration(labelText: "Kategori"),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Batal"),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (titleController.text.isNotEmpty && courseController.text.isNotEmpty) {
+                      // 1. Menggandakan data file ke dalam penyimpanan terisolasi yang hanya dapat diakses oleh aplikasi
+                      Directory appDocDir = await getApplicationDocumentsDirectory();
+                      String newFilePath = '${appDocDir.path}/$fileName';
+                      await originalFile.copy(newFilePath);
+
+                      // 2. Meregistrasikan informasi struktural materi ke dalam database lokal
+                      await DatabaseHelper.instance.insertMaterial(
+                        titleController.text,
+                        courseController.text,
+                        dialogCategory,
+                        newFilePath,
+                      );
+
+                      Navigator.pop(context);
+                      _refreshMaterials();
+                    }
+                  },
+                  child: const Text("Simpan"),
+                ),
+              ],
+            );
+          }
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -36,7 +128,6 @@ class _ViewMaterialsScreenState extends State<ViewMaterialsScreen> {
       ),
       body: Column(
         children: [
-          // Widget Filter Kategori
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             color: Colors.grey[100],
@@ -66,7 +157,6 @@ class _ViewMaterialsScreenState extends State<ViewMaterialsScreen> {
               ],
             ),
           ),
-          // List Materi
           Expanded(
             child: FutureBuilder<List<Map<String, dynamic>>>(
               future: _materialsFuture,
@@ -78,7 +168,6 @@ class _ViewMaterialsScreenState extends State<ViewMaterialsScreen> {
                   return const Center(child: Text("Belum ada materi offline yang disimpan."));
                 }
 
-                // Logic filternya disini
                 final allMaterials = snapshot.data!;
                 final materials = _selectedCategory == 'Semua' 
                     ? allMaterials 
@@ -101,6 +190,8 @@ class _ViewMaterialsScreenState extends State<ViewMaterialsScreen> {
                         trailing: IconButton(
                           icon: const Icon(Icons.delete, color: Colors.grey),
                           onPressed: () async {
+                            // Mengeksekusi delegasi penghapusan file baik dari tabel SQL maupun fisik memori lokal
+                            File(material['filePath']).deleteSync(); 
                             await DatabaseHelper.instance.deleteMaterial(material['id']);
                             _refreshMaterials();
                           },
@@ -121,6 +212,14 @@ class _ViewMaterialsScreenState extends State<ViewMaterialsScreen> {
             ),
           ),
         ],
+      ),
+      // Tombol Tindakan Mengambang (Floating Action Button) untuk memulai rutinitas penambahan file secara manual
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _addMaterialFromDevice,
+        icon: const Icon(Icons.add),
+        label: const Text("File PDF"),
+        backgroundColor: const Color(0xFF4A00E0),
+        foregroundColor: Colors.white,
       ),
     );
   }

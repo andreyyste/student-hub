@@ -25,15 +25,16 @@ class PdfViewerScreen extends StatefulWidget {
 class _PdfViewerScreenState extends State<PdfViewerScreen> {
   bool isDownloading = false;
 
-  // Form Controller untuk Popup
+  // Pengendali input (TextEditingController) untuk kotak dialog formulir penyimpanan dokumen
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _courseController = TextEditingController();
   String _selectedCategory = 'Slide'; 
   final List<String> _categories = ['Slide', 'Catatan', 'Latihan', 'Lainnya'];
   
-  // Variabel buat nampung deadline
+  // Status internal untuk merekam nilai tenggat waktu khusus formulir kategori tugas
   DateTime? _selectedDeadline; 
 
+  /// Mengelola proses pengunduhan PDF ke memori fisik (Storage) dan menyimpan rekamannya di basis data
   Future<void> _downloadAndSavePdf(String type) async {
     if (widget.pdfUrl == null || widget.cookie == null) return;
 
@@ -55,7 +56,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
       );
 
       if (type == 'tugas') {
-        // Sekarang pake deadline dari yang lu pilih di form
+        // Mewariskan detail entitas 'tugas' ke database dengan lampiran berkas lokal dan tenggat waktu
         final newTask = StudentTask(
           title: _titleController.text,
           course: _courseController.text,
@@ -101,11 +102,12 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
     }
   }
 
-  // --- POPUP FORM SEBELUM DOWNLOAD (UDAH DI-FIX) ---
+  // --- ANTARMUKA DIALOG FORMULIR PENYIMPANAN PDF ---
   void _showDownloadDialog(String type) {
+    // Mereset variabel inputan dan logika form setiap kali jendela dialog terbuka
     _titleController.clear();
     _courseController.clear();
-    _selectedDeadline = null; // Reset tiap kali buka popup
+    _selectedDeadline = null; 
 
     showDialog(
       context: context,
@@ -131,7 +133,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                   ),
                   const SizedBox(height: 10),
                   
-                  // Kalau Tugas, munculin pemilih Deadline
+                  // Secara dinamis memunculkan selektor tenggat waktu jika pengklasifikasiannya adalah 'Tugas'
                   if (type == 'tugas')
                     ListTile(
                       contentPadding: EdgeInsets.zero,
@@ -154,7 +156,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                             initialTime: TimeOfDay.now(),
                           );
                           if (pickedTime != null) {
-                            // Pake setStateDialog biar kalender di popupnya ke-update
+                            // Memicu rendering antarmuka internal dialog agar tenggat waktu baru tertampilkan
                             setStateDialog(() {
                               _selectedDeadline = DateTime(
                                 pickedDate.year,
@@ -169,7 +171,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                       },
                     ),
 
-                  // Kalau Materi, munculin Dropdown Kategori
+                  // Secara dinamis memunculkan opsi turunan 'Kategori' jika pengklasifikasiannya adalah 'Materi'
                   if (type == 'materi')
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: "Kategori"),
@@ -199,7 +201,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
               ElevatedButton(
                 onPressed: () {
                   if (_titleController.text.isNotEmpty && _courseController.text.isNotEmpty) {
-                    // Validasi khusus tugas: gaboleh kosong deadline-nya
+                    // Validasi khusus: Formulir pengisian tidak boleh kosong saat menampung status penugasan
                     if (type == 'tugas' && _selectedDeadline == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Pilih deadline-nya dulu bro!')),

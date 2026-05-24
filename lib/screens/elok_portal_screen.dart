@@ -1,4 +1,4 @@
-import 'dart:io'; // <--- TAMBAHIN INI BUAT CEK PLATFORM
+import 'dart:io'; // Mengimpor pustaka dart:io untuk mendukung pengecekan platform sistem operasi
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -15,18 +15,19 @@ class _ElokPortalScreenState extends State<ElokPortalScreen> {
   double _progress = 0;
   InAppWebViewController? _webViewController;
 
-  // Whitelist domain yang allowed
+  // Mendefinisikan daftar 'whitelist' domain yang aman dan berizin untuk diakses di dalam WebView
   final List<String> _allowedDomains = [
     'elok.ugm.ac.id',
-    'simaster.ugm.ac.id', // kalo ada integration
-    'sso.ugm.ac.id', // single sign-on UGM
-    // tambahin domain UGM lain yang trusted
+    'simaster.ugm.ac.id', // Domain otentikasi/sistem terintegrasi
+    'sso.ugm.ac.id', // Single Sign-On otentikasi UGM
+    // Domain sekunder terverifikasi dari UGM dapat ditambahkan ke sini
   ];
 
+  /// Memverifikasi pakah alamat URI (Uniform Resource Identifier) termasuk dalam daftar domain sah.
   bool _isAllowedUrl(Uri? uri) {
     if (uri == null) return false;
 
-    // Check kalo domain ada di whitelist
+    // Memastikan kecocokan domain utama maupun sub-domain terkait
     return _allowedDomains.any(
       (domain) => uri.host == domain || uri.host.endsWith('.$domain'),
     );
@@ -78,15 +79,15 @@ class _ElokPortalScreenState extends State<ElokPortalScreen> {
               builtInZoomControls: true,
               displayZoomControls: false,
 
-              // FIX: Matiin file access
+              // Mengamankan WebView dengan memblokir izin akses sistem berkas (file system) dari URL
               allowFileAccessFromFileURLs: false,
               allowUniversalAccessFromFileURLs: false,
 
-              // FIX: Lebih strict di mixed content
+              // Menyesuaikan kebijakan konten campuran (HTTP/HTTPS) agar berjalan pada mode kompatibilitas penuh
               mixedContentMode:
                   MixedContentMode.MIXED_CONTENT_COMPATIBILITY_MODE,
 
-              // Tambahin security features
+              // Memastikan cache WebView berfungsi dengan optimal tanpa interupsi
               clearCache: false,
               cacheEnabled: true,
             ),
@@ -97,9 +98,9 @@ class _ElokPortalScreenState extends State<ElokPortalScreen> {
             shouldOverrideUrlLoading: (controller, navigationAction) async {
               var uri = navigationAction.request.url;
 
-              // VALIDASI URL DULU!
+              // Mengamankan arus lalu lintas navigasi: Mencegat dan mengevaluasi akses URL ke luar domain UGM
               if (uri != null && !_isAllowedUrl(uri)) {
-                // Kalo bukan domain yang diallow, kasih warning
+                // Menampilkan dialog keamanan apabila tujuan navigasi berada di luar whitelist
                 if (context.mounted) {
                   final shouldOpen = await showDialog<bool>(
                     context: context,
@@ -123,7 +124,7 @@ class _ElokPortalScreenState extends State<ElokPortalScreen> {
                   );
 
                   if (shouldOpen == true) {
-                    // Buka di browser eksternal, jangan di WebView
+                    // Meneruskan peluncuran URL berisiko eksternal ke dalam mesin peramban bawaan sistem
                     if (await canLaunchUrl(uri)) {
                       await launchUrl(
                         uri,
@@ -135,7 +136,7 @@ class _ElokPortalScreenState extends State<ElokPortalScreen> {
                 return NavigationActionPolicy.CANCEL;
               }
 
-              // PDF handling (tetap sama)
+              // Menangani penangkapan URL berakhiran PDF untuk diarahkan ke layar internal (PdfViewerScreen)
               if (uri != null && uri.path.toLowerCase().endsWith(".pdf")) {
                 CookieManager cookieManager = CookieManager.instance();
                 List<Cookie> cookies = await cookieManager.getCookies(
@@ -163,7 +164,7 @@ class _ElokPortalScreenState extends State<ElokPortalScreen> {
               return NavigationActionPolicy.ALLOW;
             },
 
-            // Tambahin error handling!
+            // Tangkapan eksekusi dan penanganan galat (error handling) bilamana terjadi masalah pemuatan
             onLoadError: (controller, url, code, message) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
