@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:io';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-// ignore: unnecessary_import
-import 'package:sqflite/sqflite.dart';
 import 'database_helper.dart';
 import 'models/student_task.dart';
 import 'models/class_schedule.dart';
@@ -11,11 +10,18 @@ import 'screens/view_tasks_screen.dart';
 import 'screens/add_task_screen.dart';
 import 'screens/schedule_screen.dart';
 import 'screens/view_materials_screen.dart'; 
+import 'screens/ai_assistant_screen.dart';
 
-void main() {
-  // Cek kalau aplikasinya dijalanin di desktop (Linux/Windows)
+// Titik masuk utama aplikasi (Main Entry Point)
+Future<void> main() async { 
+  // Memastikan binding Flutter telah diinisialisasi sebelum menjalankan fungsi asinkron.
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Memuat konfigurasi variabel lingkungan dari file .env.
+  await dotenv.load(fileName: ".env");
+
+  // Inisialisasi SQLite FFI secara spesifik untuk lingkungan desktop (Windows/Linux).
   if (Platform.isWindows || Platform.isLinux) {
-    // Inisialisasi FFI biar SQLite bisa jalan
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
@@ -39,10 +45,11 @@ class StudentApp extends StatelessWidget {
   }
 }
 
+// Enumerasi untuk melacak status ekspansi kartu pada dashboard.
 enum ExpandedCard { none, task, schedule }
 
 // ==========================================
-// HALAMAN 1: DASHBOARD
+// TAMPILAN DASHBOARD
 // ==========================================
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -58,6 +65,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   ExpandedCard _currentExpanded = ExpandedCard.none;
 
+  // Mengatur animasi ekspansi kartu informasi (Tugas atau Jadwal).
   void _toggleExpand(ExpandedCard card) {
     setState(() {
       if (_currentExpanded == card) {
@@ -74,6 +82,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _refreshData();
   }
 
+  // Mengambil data terbaru untuk tugas dan jadwal dari database lokal (SQLite).
   Future<void> _refreshData() async {
     setState(() => _isLoading = true);
     final tasks = await DatabaseHelper.instance.getAllTasks();
@@ -85,12 +94,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  // Mengambil tugas dengan tenggat waktu paling dekat.
   StudentTask? getNearestTask() {
     if (_tasks.isEmpty) return null;
     return _tasks.first;
   }
 
-  // FUNGSI NYARI JADWAL TERDEKAT HARI INI (VERSI UPDATE)
+  // Mencari jadwal kelas terdekat yang akan datang pada hari ini.
   ClassSchedule? getNearestSchedule() {
     if (_schedules.isEmpty) return null;
 
@@ -105,16 +115,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ];
     String hariIni = hari[DateTime.now().weekday - 1];
 
+    // Memfilter jadwal berdasarkan hari ini dan status pembatalan.
     var jadwalHariIni = _schedules
         .where((s) => s.day == hariIni && !s.isCancelled)
         .toList();
     if (jadwalHariIni.isEmpty) return null;
 
+    // Mengurutkan jadwal berdasarkan waktu mulai terawal.
     jadwalHariIni.sort((a, b) => a.startTime.compareTo(b.startTime));
 
     final now = TimeOfDay.now();
     final nowInMinutes = (now.hour * 60) + now.minute;
 
+    // Menentukan kelas yang sedang berjalan atau akan datang.
     for (var jadwal in jadwalHariIni) {
       final endParts = jadwal.endTime.split(":");
       final endHour = int.parse(endParts[0]);
@@ -128,6 +141,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return null;
   }
 
+  // Memformat representasi string tenggat waktu berdasarkan selisih hari.
   String _formatWaktu(DateTime deadline) {
     final sekarang = DateTime.now();
     final hariIni = DateTime(sekarang.year, sekarang.month, sekarang.day);
@@ -164,6 +178,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Banner Utama (Greeting & Ringkasan)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
@@ -192,7 +207,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // ------------------------------------------
-                              // 1. KARTU TUGAS (TASK)
+                              // Kartu Informasi: Tugas Mendesak
                               // ------------------------------------------
                               Expanded(
                                 flex: _currentExpanded == ExpandedCard.task
@@ -278,7 +293,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
 
                               // ------------------------------------------
-                              // 2. KARTU JADWAL (CLASS)
+                              // Kartu Informasi: Jadwal Kelas Terdekat
                               // ------------------------------------------
                               Expanded(
                                 flex: _currentExpanded == ExpandedCard.schedule
@@ -379,6 +394,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     const SizedBox(height: 15),
 
+                    // Grid Menu Navigasi
                     GridView.count(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -417,6 +433,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           Icons.language_rounded,
                           Colors.indigo,
                         ),
+                        _buildMenuCard(
+                          context,
+                          "Tanya AI",
+                          Icons.auto_awesome,
+                          Colors.teal,
+                        ),
                       ],
                     ),
                   ],
@@ -426,7 +448,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-Widget _buildMenuCard(
+  // Widget pembantu (helper) untuk membuat kartu menu dan logika navigasinya.
+  Widget _buildMenuCard(
     BuildContext context,
     String title,
     IconData icon,
@@ -434,6 +457,7 @@ Widget _buildMenuCard(
   ) {
     return InkWell(
       onTap: () async {
+        // Melakukan rute navigasi berdasarkan judul kartu menu yang ditekan.
         if (title == "Tambah Tugas") {
           await Navigator.push(
             context,
@@ -461,6 +485,11 @@ Widget _buildMenuCard(
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const ElokPortalScreen()),
+          );
+        } else if (title == "Tanya AI") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AiAssistantScreen()),
           );
         }
       },
