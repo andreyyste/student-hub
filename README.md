@@ -1,77 +1,84 @@
-# 🎓 Student Hub UGM - Task & Schedule Tracker
+# StudentHub 🎓
 
-A mobile application built with **Flutter** specifically designed to help university students (especially at Universitas Gadjah Mada) manage their academic life. This app serves as a centralized hub for tracking assignments, managing class schedules, and accessing the eLOK portal seamlessly.
+StudentHub adalah aplikasi manajemen produktivitas berbasis Flutter yang dirancang khusus untuk membantu mahasiswa mengorganisasi jadwal perkuliahan, manajemen tugas, dan pengarsipan materi. Aplikasi ini terintegrasi langsung dengan portal eLOK UGM untuk kemudahan pengunduhan dokumen, serta dilengkapi dengan Asisten AI cerdas berbasis *multi-model* (Google Gemini, Ollama Lokal, dan GitHub Models) untuk mendampingi proses belajar.
 
-## ✨ Key Features
+## ✨ Fitur Utama
 
-* **📊 Smart Dashboard**: Displays the most urgent upcoming tasks and the next immediate class schedule for the day.
-* **📝 Task Management**: Add, view, and complete assignments. Data is stored locally using SQLite for fast, offline access.
-* **🗓️ Dynamic Class Schedule**:
-    * Filter and view schedules by semester.
-    * Visual indicators for "Makeup Classes" and "Cancelled Classes".
-* **🌐 eLOK Portal Integration**:
-    * Built-in WebView to securely browse `elok.ugm.ac.id`.
-    * **Smart PDF Reader**: Automatically extracts session cookies to open eLOK PDF materials directly within the app—no external downloads or third-party apps required.
-    * Support for external file downloads (ZIP, DOCX, etc.) directly to your device.
+- **Manajemen Jadwal Kuliah**: Pencatatan jadwal kelas, ruangan, dan waktu secara mendetail. Mendukung penandaan khusus untuk kelas pengganti atau kelas yang dibatalkan.
+- **Sistem Pelacakan Tugas**: Pemantauan tenggat waktu tugas secara *real-time* yang dilengkapi dengan fitur pelampiran berkas referensi lokal (PDF).
+- **Integrasi eLOK UGM**: Peramban internal (*WebView*) yang dioptimalkan untuk mengakses portal eLOK UGM. Pengguna dapat membaca dan mengunduh materi atau tugas berekstensi PDF langsung ke dalam penyimpanan luring perangkat.
+- **Pustaka Materi Luring (Offline)**: Pengarsipan materi perkuliahan dalam berbagai kategori (Slide, Catatan, Latihan) yang dapat dibaca kapan saja menggunakan penampil PDF terintegrasi.
+- **Asisten AI Terintegrasi**: Ruang obrolan interaktif dengan kemampuan analisis konteks (mengetahui jadwal dan tugas pengguna). Mendukung penggunaan berbagai model AI seperti Gemini (Cloud), Llama 3 (via Ollama REST API Lokal), dan model lain via GitHub Inference API.
 
-## 🛠️ Tech Stack
+## 🛠️ Teknologi yang Digunakan
 
-* **Framework**: [Flutter](https://flutter.dev/) (Dart)
-* **Database**: [sqflite](https://pub.dev/packages/sqflite) (Local SQLite)
-* **WebView**: [flutter_inappwebview](https://pub.dev/packages/flutter_inappwebview)
-* **PDF Viewer**: [syncfusion_flutter_pdfviewer](https://pub.dev/packages/syncfusion_flutter_pdfviewer)
+- **Kerangka Kerja (Framework)**: [Flutter](https://flutter.dev/) (Dart)
+- **Basis Data Luring**: SQLite (melalui modul `sqflite` dan `sqflite_common_ffi` untuk dukungan Desktop).
+- **Integrasi AI**: `google_generative_ai` & REST API `http`.
+- **Manajemen Berkas & PDF**: `syncfusion_flutter_pdfviewer`, `file_picker`, `path_provider`.
+- **Peramban Web Internal**: `flutter_inappwebview`.
+- **Manajemen Variabel Lingkungan**: `flutter_dotenv`.
 
-## 🚀 Getting Started
+## 📋 Prasyarat
 
-Follow these instructions to set up and run the project locally on your machine.
+Sebelum memulai proses instalasi, pastikan sistem Anda telah memenuhi persyaratan berikut:
+1. Telah memasang [Flutter SDK](https://docs.flutter.dev/get-started/install) (versi terbaru direkomendasikan).
+2. Perangkat lunak IDE seperti Android Studio atau Visual Studio Code.
+3. Kunci API yang valid:
+   - **Google Gemini API Key** (Dapatkan di [Google AI Studio](https://aistudio.google.com/)).
+   - **GitHub Token** (Dapatkan di Pengaturan Akun GitHub Anda untuk akses GitHub Models).
+4. (Opsional) Ollama berjalan secara lokal jika Anda berencana menggunakan model Llama 3.
 
-### Prerequisites
-Ensure you have the following installed and properly configured:
-* [Flutter SDK](https://docs.flutter.dev/get-started/install)
-* Android Studio or VS Code (with Flutter & Dart extensions)
-* An Android Emulator or a physical device connected with USB Debugging enabled.
+## 🚀 Panduan Instalasi
 
-### Installation Steps
+Ikuti langkah-langkah di bawah ini untuk menjalankan aplikasi di perangkat atau emulator Anda:
 
-**1. Clone the repository**
-Open your terminal and run:
-```bash
-git clone https://github.com/andreyyste/studentHub.git
+**1. Kloning Repositori**
 ```
-2. Navigate to the project directory
-
-```bash
-cd studentHub
+git clone [https://github.com/username-anda/student-hub.git](https://github.com/username-anda/student-hub.git)
+cd student-hub
 ```
-3. Install dependencies
-Fetch all the required Flutter packages:
-
-```bash
+2. Unduh Dependensi
+Unduh seluruh pustaka (packages) yang dibutuhkan oleh proyek.
+```
 flutter pub get
 ```
-4. Run the application
-Execute the following command to launch the app on your connected device/emulator:
+3. Konfigurasi Variabel Lingkungan (.env)
+Aplikasi ini memerlukan beberapa kredensial API untuk fitur Asisten AI. Buat sebuah berkas bernama .env di direktori utama (root) proyek, lalu tambahkan konfigurasi berikut:
+Cuplikan kode
+```
+GEMINI_API_KEY=masukkan_api_key_gemini_anda_di_sini
+GITHUB_TOKEN=masukkan_token_github_anda_di_sini
+```
+(Catatan: Berkas .env telah dimasukkan ke dalam .gitignore sehingga kunci API Anda akan tetap aman dan tidak terunggah ke repositori).
 
-```bash
+4. Jalankan Aplikasi
+Pastikan emulator atau perangkat fisik Android/iOS Anda telah terhubung.
+Bash
+```
 flutter run
 ```
-Note for Non-Developers: If you just want to use the app without compiling the code, head over to the Releases tab on the right side of this repository, download the app-release.apk file, and install it directly on your Android device.
-```bash
-📂 Project Structure
-The codebase is modularized for better maintainability:
+📂 Struktur Direktori Utama
+```
 
-Plaintext
 lib/
-├── database_helper.dart        # SQLite configuration and CRUD operations
-├── main.dart                   # Entry point and Main Dashboard Screen
-├── models/
-│   ├── class_schedule.dart     # Data model for schedules
-│   └── student_task.dart       # Data model for tasks
-└── screens/
-    ├── add_edit_schedule_screen.dart
-    ├── add_task_screen.dart
-    ├── elok_portal_screen.dart # WebView implementation for eLOK
-    ├── pdf_viewer_screen.dart  # Custom PDF Viewer with Cookie injection
-    ├── schedule_screen.dart
-    └── view_tasks_screen.dart
-Built with ☕ to survive university deadlines.
+├── models/                  # Struktur data (ClassSchedule, StudentTask)
+├── screens/                 # Antarmuka pengguna (UI)
+│   ├── dashboard_screen.dart
+│   ├── schedule_screen.dart
+│   ├── view_tasks_screen.dart
+│   ├── elok_portal_screen.dart
+│   ├── pdf_viewer_screen.dart
+│   └── ai_assistant_screen.dart
+├── database_helper.dart     # Logika konfigurasi dan kueri SQLite
+├── ai_service.dart          # Layanan integrasi API untuk Gemini, Ollama, & GitHub Models
+└── main.dart                # Titik masuk utama aplikasi (Entry Point)
+
+```
+💡 Cara Penggunaan
+
+    Memantau Dasbor: Halaman utama akan langsung menyajikan kartu informasi mengenai jadwal kelas terdekat di hari tersebut dan tugas dengan tenggat waktu paling mendesak.
+
+    Mengelola Dokumen eLOK: Buka menu Portal eLOK, masuk (login) menggunakan akun SSO UGM Anda, cari berkas PDF yang ingin diunduh. Aplikasi akan mencegat URL PDF tersebut dan memunculkan pop-up formulir untuk menyimpannya ke dalam database sebagai Materi atau Tugas.
+
+    Menggunakan AI: Buka menu Tanya AI. Secara bawaan, AI telah diberikan konteks membaca jadwal dan tugas Anda di database. Gunakan dropdown di sudut kanan atas untuk beralih antara model Google Gemini, Ollama Lokal, atau model eksternal lainnya.
