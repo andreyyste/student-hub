@@ -1,0 +1,19 @@
+{
+  "include": true,
+  "featured": true,
+  "order": 1,
+  "title": "StudentHub",
+  "brief": "A productivity and schedule management app for university students with an integrated AI Assistant.",
+  "description": "StudentHub is a Flutter-based application designed to help university students organize their classes, track assignments, and archive materials. It features direct eLOK UGM portal integration for seamless PDF downloads and includes a multi-model AI assistant powered by Google Gemini, local Ollama, and GitHub Models to assist with learning.",
+  "tags": [
+    "Flutter",
+    "Dart",
+    "SQLite",
+    "AI",
+    "Gemini",
+    "Mobile App"
+  ],
+  "coverImage": null,
+  "hasSourceCode": true,
+  "liveUrl": null
+}
